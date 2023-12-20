@@ -53,6 +53,9 @@ set(StochTree_HEADER_DIR ${PROJECT_SOURCE_DIR}/include)
 # boost.math header file directory
 set(BOOSTMATH_HEADER_DIR ${PROJECT_SOURCE_DIR}/dependencies/boost_math/include)
 
+# Eigen header file directory
+set(EIGEN_HEADER_DIR ${PROJECT_SOURCE_DIR}/dependencies/eigen)
+
 # Library directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build)
 
@@ -66,7 +69,8 @@ file(
   src/interface.cpp
   src/io.cpp
   src/json11.cpp
-  src/model.cpp
+  src/model/univariate_xbart.cpp
+  src/model/univariate_bart.cpp
   src/model_draw.cpp
   src/optimization.cpp
   src/partition_tracker.cpp
@@ -77,7 +81,7 @@ file(
 add_library(stochtree_objs OBJECT ${SOURCES})
 
 # Include the headers in the source library
-target_include_directories(stochtree_objs PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR})
+target_include_directories(stochtree_objs PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR})
 
 if(APPLE)
   set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
@@ -85,7 +89,7 @@ endif()
 
 if(BUILD_CLI)
   add_executable(stochtree src/main.cpp)
-  target_include_directories(stochtree PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR})
+  target_include_directories(stochtree PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR})
   target_link_libraries(stochtree PRIVATE stochtree_objs)
 endif()
 
@@ -107,7 +111,7 @@ if(BUILD_CPP_TEST)
   file(GLOB CPP_TEST_SOURCES test/cpp/*.cpp)
   add_executable(teststochtree ${CPP_TEST_SOURCES})
   set(STOCHTREE_TEST_HEADER_DIR ${PROJECT_SOURCE_DIR}/test/cpp)
-  target_include_directories(teststochtree PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${STOCHTREE_TEST_HEADER_DIR})
+  target_include_directories(teststochtree PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR} ${STOCHTREE_TEST_HEADER_DIR})
   target_link_libraries(teststochtree PRIVATE stochtree_objs GTest::gtest_main)
   gtest_discover_tests(teststochtree)
 endif()
@@ -116,7 +120,7 @@ if(BUILD_CPP_DEBUG_TARGETS)
   # Build test suite
   add_executable(debugstochtree debug/cpp/debug.cpp)
   set(StochTree_DEBUG_HEADER_DIR ${PROJECT_SOURCE_DIR}/debug/cpp)
-  target_include_directories(debugstochtree PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${StochTree_DEBUG_HEADER_DIR})
+  target_include_directories(debugstochtree PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR} ${StochTree_DEBUG_HEADER_DIR})
   target_link_libraries(debugstochtree PRIVATE stochtree_objs)
 endif()
 

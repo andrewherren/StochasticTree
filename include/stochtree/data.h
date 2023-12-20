@@ -18,6 +18,8 @@
 #ifndef STOCHTREE_DATA_H_
 #define STOCHTREE_DATA_H_
 
+#include <Eigen/Dense>
+
 #include <stochtree/config.h>
 #include <stochtree/io.h>
 #include <stochtree/log.h>
@@ -43,50 +45,57 @@ class Dataset {
   ~Dataset() {};
 
   /*! \brief Covariate value at a given row and col */
-  double CovariateValue(data_size_t row, int32_t col) {return covariates_[row*num_covariates_ + col];}
+  double CovariateValue(data_size_t row, int32_t col) {return covariates_(row, col);}
 
   /*! \brief Treatment value at a given row and col */
-  double TreatmentValue(data_size_t row, int32_t col) {return treatment_[row*num_treatment_ + col];}
+  double TreatmentValue(data_size_t row, int32_t col) {return treatment_(row, col);}
 
   /*! \brief Outcome value at a given row and col */
-  double OutcomeValue(data_size_t row, int32_t col) {return outcome_[row*num_outcome_ + col];}
+  double OutcomeValue(data_size_t row, int32_t col) {return outcome_(row, col);}
 
   /*! \brief Residual value at a given row and col */
-  double ResidualValue(data_size_t row, int32_t col) {return residuals_[row*num_outcome_ + col];}
+  double ResidualValue(data_size_t row, int32_t col) {return residuals_(row, col);}
 
   /*! \brief Outcome value at a given row (assuming a single outcome) */
-  double OutcomeValue(data_size_t row) {return outcome_[row];}
+  double OutcomeValue(data_size_t row) {return outcome_(row, 0);}
 
   /*! \brief Residual value at a given row (assuming a single outcome) */
-  double ResidualValue(data_size_t row) {return residuals_[row];}
+  double ResidualValue(data_size_t row) {return residuals_(row, 0);}
 
   /*! \brief Add value to residual */
   inline void ResidualAdd(data_size_t row, int32_t col, double val) {
-    residuals_[row*num_outcome_ + col] += val;
+    residuals_(row, col) += val;
   }
 
   /*! \brief Subtract value from residual */
   inline void ResidualSubtract(data_size_t row, int32_t col, double val) {
-    residuals_[row*num_outcome_ + col] -= val;
+    residuals_(row, col) -= val;
   }
 
   /*! \brief Divide residual by value */
   inline void ResidualDivide(data_size_t row, int32_t col, double val) {
-    residuals_[row*num_outcome_ + col] /= val;
+    residuals_(row, col) /= val;
   }
 
   /*! \brief Divide residual by value */
   inline void ResidualMultiply(data_size_t row, int32_t col, double val) {
-    residuals_[row*num_outcome_ + col] *= val;
+    residuals_(row, col) *= val;
   }
 
   /*! \brief Reset all residuals to raw outcome values */
   inline void ResidualReset() {
-    if (residuals_.size() != outcome_.size()) {
-      Log::Fatal("Residual vector is a different size than outcome vector");
+    data_size_t const resid_rows = residuals_.rows();
+    int const resid_cols = residuals_.cols();
+    data_size_t const outcome_rows = outcome_.rows();
+    int const outcome_cols = outcome_.cols();
+
+    if ((resid_rows != outcome_rows) || (resid_cols != outcome_cols)) {
+      Log::Fatal("Residual matrix is a different size than outcome matrix");
     }
-    for (data_size_t i = 0; i < residuals_.size(); i++) {
-      residuals_[i] = outcome_[i];
+    for (data_size_t i = 0; i < outcome_rows; i++) {
+      for (int j = 0; j < outcome_cols; j++) {
+        residuals_(i, j) = outcome_(i, j);
+      }
     }
   }
 
@@ -108,6 +117,9 @@ class Dataset {
   /*! \brief Number of treatment variables */
   int32_t NumTreatment() {return num_treatment_;}
 
+  /*! \brief Number of basis variables */
+  int32_t NumBasis() {return num_basis_;}
+
   /*! \brief Number of Numeric Covariates */
   int32_t NumCovariates() {return num_covariates_;}
 
@@ -120,15 +132,25 @@ class Dataset {
   /*! \brief Number of Unordered Categorical Covariates */
   int32_t NumUnorderedCategoricalCovariates() {return num_unordered_categorical_covariates_;}
 
+  /*! \brief Whether outcome is univariate */
+  bool UnivariateOutcome() {return univariate_outcome_;}
+
+  /*! \brief Whether treatment is univariate */
+  bool UnivariateTreatment() {return univariate_treatment_;}
+
+  /*! \brief Whether basis is univariate */
+  bool UnivariateBasis() {return univariate_basis_;}
+
   /*! \brief Type of feature j */
   FeatureType GetFeatureType(int32_t j) {return covariate_types_[j];}
   
  private:
-  // Raw data, stored in row-major format
-  std::vector<double> covariates_;
-  std::vector<double> treatment_;
-  std::vector<double> outcome_;
-  std::vector<double> residuals_;
+  // Raw data, stored in Eigen matrices
+  Eigen::MatrixXd covariates_;
+  Eigen::MatrixXd treatment_;
+  Eigen::MatrixXd outcome_;
+  Eigen::MatrixXd residuals_;
+  Eigen::MatrixXd basis_;
   data_size_t num_observations_;
 
   // Covariate info
@@ -138,9 +160,13 @@ class Dataset {
   int32_t num_unordered_categorical_covariates_{0};
   std::vector<FeatureType> covariate_types_;
 
-  // Treatment info
-  int32_t num_treatment_{0};
+  // Outcome, treatment, and basis function dimensionality info
   int32_t num_outcome_{0};
+  int32_t num_treatment_{0};
+  int32_t num_basis_{0};
+  bool univariate_outcome_{true};
+  bool univariate_treatment_{true};
+  bool univariate_basis_{true};
 };
 
 /*! \brief Dataset creation class. Can build a training dataset by either:
@@ -156,7 +182,7 @@ class DataLoader {
   Dataset* LoadFromFile(const char* filename);
 
   Dataset* ConstructFromMatrix(double* matrix_data, int num_col, 
-                                        data_size_t num_row, bool is_row_major);
+                               data_size_t num_row, bool is_row_major);
 
   /*! \brief Disable copy */
   DataLoader& operator=(const DataLoader&) = delete;
@@ -168,7 +194,8 @@ class DataLoader {
   void SetHeader(const Config& io_config);
 
   void UnpackColumnVectors(std::vector<int32_t>& label_columns, std::vector<int32_t>& outcome_columns, 
-                           std::vector<int32_t>& ordered_categoricals, std::vector<int32_t>& unordered_categoricals);
+                           std::vector<int32_t>& ordered_categoricals, std::vector<int32_t>& unordered_categoricals, 
+                           std::vector<int32_t>& basis_columns);
 
   void CheckDataset(const Dataset* dataset);
 
@@ -189,6 +216,8 @@ class DataLoader {
   std::vector<int32_t> unordered_categoricals_;
   /*! \brief indices of ordered categorical features */
   std::vector<int32_t> ordered_categoricals_;
+  /*! \brief indices of basis functions */
+  std::vector<int32_t> basis_columns_;
 };
 
 } // namespace StochTree

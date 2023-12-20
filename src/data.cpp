@@ -16,14 +16,15 @@ namespace StochTree {
 
 DataLoader::DataLoader(const Config& io_config, int num_class, const char* filename)
   :config_(io_config) {
-  UnpackColumnVectors(outcome_columns_, treatment_columns_, ordered_categoricals_, unordered_categoricals_);
+  UnpackColumnVectors(outcome_columns_, treatment_columns_, ordered_categoricals_, unordered_categoricals_, basis_columns_);
 }
 
 DataLoader::~DataLoader() {
 }
 
 void DataLoader::UnpackColumnVectors(std::vector<int32_t>& outcome_columns, std::vector<int32_t>& treatment_columns, 
-                                     std::vector<int32_t>& ordered_categoricals, std::vector<int32_t>& unordered_categoricals) {
+                                     std::vector<int32_t>& ordered_categoricals, std::vector<int32_t>& unordered_categoricals, 
+                                     std::vector<int32_t>& basis_columns) {
   // Read label indices from config
   if (config_.outcome_columns.size() > 0) {
     outcome_columns = config_.Str2FeatureVec(config_.outcome_columns.c_str());
@@ -42,6 +43,11 @@ void DataLoader::UnpackColumnVectors(std::vector<int32_t>& outcome_columns, std:
   // Read unordered categorical variables from config
   if (config_.unordered_categoricals.size() > 0) {
     unordered_categoricals = config_.Str2FeatureVec(config_.unordered_categoricals.c_str());
+  }
+
+  // Read basis columns from config
+  if (config_.basis_columns.size() > 0) {
+    basis_columns = config_.Str2FeatureVec(config_.basis_columns.c_str());
   }
 }
 
@@ -66,8 +72,10 @@ Dataset* DataLoader::LoadFromFile(const char* filename) {
   bool has_outcome = num_outcome > 0;
   // Resize outcome vector
   if (has_outcome) {
-    dataset->outcome_.resize(dataset->num_observations_*num_outcome);
-    dataset->residuals_.resize(dataset->num_observations_*num_outcome);
+    if (num_outcome == 1) dataset->univariate_outcome_ = true;
+    else dataset->univariate_outcome_ = false;
+    dataset->outcome_.resize(dataset->num_observations_, num_outcome);
+    dataset->residuals_.resize(dataset->num_observations_, num_outcome);
     dataset->num_outcome_ = num_outcome;
   }
 
@@ -76,19 +84,34 @@ Dataset* DataLoader::LoadFromFile(const char* filename) {
   bool has_treatment = num_treatment > 0;
   // Resize treatment vector
   if (has_treatment) {
-    dataset->treatment_.resize(dataset->num_observations_*num_treatment);
+    if (num_treatment == 1) dataset->univariate_treatment_ = true;
+    else dataset->univariate_treatment_ = false;
+    dataset->treatment_.resize(dataset->num_observations_, num_treatment);
     dataset->num_treatment_ = num_treatment;
   }
+
+  // Check if there are basis columns
+  int32_t num_basis = basis_columns_.size();
+  bool has_basis = num_basis > 0;
+  // Resize treatment vector
+  if (has_basis) {
+    if (num_basis == 1) dataset->univariate_basis_ = true;
+    else dataset->univariate_basis_ = false;
+    dataset->basis_.resize(dataset->num_observations_, num_basis);
+    dataset->num_basis_ = num_basis;
+  }
   
-  // Determine the number of features (as opposed to outcome / treatment)
+  // Determine the number of features (as opposed to outcome / treatment / basis function)
   int num_features = 0;
-  bool outcome_matched, treatment_matched;
+  bool outcome_matched, treatment_matched, basis_matched;
   for (int i = 0; i < num_columns; i++){
     outcome_matched = (std::find(outcome_columns_.begin(), outcome_columns_.end(), i)
                         != outcome_columns_.end());
     treatment_matched = (std::find(treatment_columns_.begin(), treatment_columns_.end(), i)
                         != treatment_columns_.end());
-    if (!outcome_matched && !treatment_matched) {
+    basis_matched = (std::find(basis_columns_.begin(), basis_columns_.end(), i)
+                     != basis_columns_.end());
+    if (!outcome_matched && !treatment_matched && !basis_matched) {
       num_features += 1;
     }
   }
@@ -96,7 +119,7 @@ Dataset* DataLoader::LoadFromFile(const char* filename) {
 
   // Resize covariate vector
   if (num_features > 0) {
-    dataset->covariates_.resize(dataset->num_observations_*num_features);
+    dataset->covariates_.resize(dataset->num_observations_, num_features);
   }
   dataset->num_covariates_ = num_features;
 
@@ -139,8 +162,10 @@ Dataset* DataLoader::ConstructFromMatrix(double* matrix_data, int num_col, data_
   int32_t num_outcome = outcome_columns_.size();
   bool has_outcome = num_outcome > 0;
   if (has_outcome) {
-    dataset->outcome_.resize(dataset->num_observations_*num_outcome);
-    dataset->residuals_.resize(dataset->num_observations_*num_outcome);
+    if (num_outcome == 1) dataset->univariate_outcome_ = true;
+    else dataset->univariate_outcome_ = false;
+    dataset->outcome_.resize(dataset->num_observations_, num_outcome);
+    dataset->residuals_.resize(dataset->num_observations_, num_outcome);
     dataset->num_outcome_ = num_outcome;
   }
 
@@ -148,25 +173,40 @@ Dataset* DataLoader::ConstructFromMatrix(double* matrix_data, int num_col, data_
   int32_t num_treatment = treatment_columns_.size();
   bool has_treatment = num_treatment > 0;
   if (has_treatment) {
-    dataset->treatment_.resize(dataset->num_observations_*num_treatment);
+    if (num_treatment == 1) dataset->univariate_treatment_ = true;
+    else dataset->univariate_treatment_ = false;
+    dataset->treatment_.resize(dataset->num_observations_, num_treatment);
     dataset->num_treatment_ = num_treatment;
+  }
+
+  // Check if there are basis columns
+  int32_t num_basis = basis_columns_.size();
+  bool has_basis = num_basis > 0;
+  // Resize treatment vector
+  if (has_basis) {
+    if (num_basis == 1) dataset->univariate_basis_ = true;
+    else dataset->univariate_basis_ = false;
+    dataset->basis_.resize(dataset->num_observations_, num_basis);
+    dataset->num_basis_ = num_basis;
   }
   
   // Determine the number of features (as opposed to outcome / treatment)
   int num_features = 0;
-  bool outcome_matched, treatment_matched;
+  bool outcome_matched, treatment_matched, basis_matched;
   for (int i = 0; i < num_col; i++){
     outcome_matched = (std::find(outcome_columns_.begin(), outcome_columns_.end(), i)
                         != outcome_columns_.end());
     treatment_matched = (std::find(treatment_columns_.begin(), treatment_columns_.end(), i)
                         != treatment_columns_.end());
-    if (!outcome_matched && !treatment_matched) {
+    basis_matched = (std::find(basis_columns_.begin(), basis_columns_.end(), i)
+                     != basis_columns_.end());
+    if (!outcome_matched && !treatment_matched && !basis_matched) {
       num_features += 1;
     }
   }
   Log::Info("Num features = %d", num_features);
   if (num_features > 0) {
-    dataset->covariates_.resize(dataset->num_observations_*num_features);
+    dataset->covariates_.resize(dataset->num_observations_, num_features);
   }
   dataset->num_covariates_ = num_features;
 
@@ -191,11 +231,12 @@ Dataset* DataLoader::ConstructFromMatrix(double* matrix_data, int num_col, data_
   }
 
   double temp_value;
-  int feature_counter, outcome_counter, treatment_counter;
+  int feature_counter, outcome_counter, treatment_counter, basis_counter;
   for (data_size_t i = 0; i < dataset->num_observations_; ++i) {
     feature_counter = 0;
     outcome_counter = 0;
     treatment_counter = 0;
+    basis_counter = 0;
     for (int j = 0; j < num_col; ++j) {
       if (is_row_major){
         // Numpy 2-d arrays are stored in "row major" order
@@ -210,15 +251,20 @@ Dataset* DataLoader::ConstructFromMatrix(double* matrix_data, int num_col, data_
                           != outcome_columns_.end());
       treatment_matched = (std::find(treatment_columns_.begin(), treatment_columns_.end(), j)
                           != treatment_columns_.end());
+      basis_matched = (std::find(basis_columns_.begin(), basis_columns_.end(), i)
+                       != basis_columns_.end());
       if (outcome_matched){
-        dataset->outcome_[i*dataset->num_outcome_ + outcome_counter] = temp_value;
-        dataset->residuals_[i*dataset->num_outcome_ + outcome_counter] = temp_value;
+        dataset->outcome_(i, outcome_counter) = temp_value;
+        dataset->residuals_(i + outcome_counter) = temp_value;
         outcome_counter += 1;
       } else if (treatment_matched) {
-        dataset->treatment_[i*dataset->num_treatment_ + treatment_counter] = temp_value;
+        dataset->treatment_(i, treatment_counter) = temp_value;
         treatment_counter += 1;
+      } else if (basis_matched) {
+        dataset->basis_(i, basis_counter) = temp_value;
+        basis_counter += 1;
       } else {
-        dataset->covariates_[i*dataset->num_covariates_ + feature_counter] = temp_value;
+        dataset->covariates_(i, feature_counter) = temp_value;
         feature_counter += 1;
       }
     }
@@ -248,8 +294,8 @@ std::vector<std::string> DataLoader::LoadTextDataToMemory(const char* filename, 
 void DataLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_data, const Parser* parser, Dataset* dataset) {
   std::vector<std::pair<int, double>> oneline_features;
   auto& ref_text_data = *text_data;
-  int feature_counter, outcome_counter, treatment_counter;
-  bool outcome_matched, treatment_matched;
+  int feature_counter, outcome_counter, treatment_counter, basis_counter;
+  bool outcome_matched, treatment_matched, basis_matched;
   for (data_size_t i = 0; i < dataset->num_observations_; ++i) {
     // unpack the vector of textlines read from file into a vector of (int, double) tuples
     oneline_features.clear();
@@ -262,21 +308,27 @@ void DataLoader::ExtractFeaturesFromMemory(std::vector<std::string>* text_data, 
     feature_counter = 0;
     outcome_counter = 0;
     treatment_counter = 0;
+    basis_counter = 0;
     for (auto& inner_data : oneline_features) {
       int feature_idx = inner_data.first;
       outcome_matched = (std::find(outcome_columns_.begin(), outcome_columns_.end(), feature_idx)
                           != outcome_columns_.end());
       treatment_matched = (std::find(treatment_columns_.begin(), treatment_columns_.end(), feature_idx)
                           != treatment_columns_.end());
+      basis_matched = (std::find(basis_columns_.begin(), basis_columns_.end(), feature_idx)
+                       != basis_columns_.end());
       if (outcome_matched){
-        dataset->outcome_[i*dataset->num_outcome_ + outcome_counter] = inner_data.second;
-        dataset->residuals_[i*dataset->num_outcome_ + outcome_counter] = inner_data.second;
+        dataset->outcome_(i, outcome_counter) = inner_data.second;
+        dataset->residuals_(i, outcome_counter) = inner_data.second;
         outcome_counter += 1;
       } else if (treatment_matched) {
-        dataset->treatment_[i*dataset->num_treatment_ + treatment_counter] = inner_data.second;
+        dataset->treatment_(i, treatment_counter) = inner_data.second;
         treatment_counter += 1;
+      } else if (basis_matched) {
+        dataset->basis_(i, basis_counter) = inner_data.second;
+        basis_counter += 1;
       } else {
-        dataset->covariates_[i*dataset->num_covariates_ + feature_counter] = inner_data.second;
+        dataset->covariates_(i, feature_counter) = inner_data.second;
         feature_counter += 1;
       }
     }

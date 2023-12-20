@@ -18,6 +18,7 @@
 #include <stochtree/partition_tracker.h>
 #include <stochtree/tree.h>
 #include "../../dependencies/boost_math/include/boost/math/special_functions/gamma.hpp"
+#include <Eigen/Dense>
 
 #include <cmath>
 #include <random>
@@ -142,14 +143,17 @@ class XBARTGaussianRegressionModel : public Model {
   inline void AddNode(node_t node_id, data_size_t node_begin, data_size_t node_end) {
     node_index_map_.insert({node_id, std::make_pair(node_begin, node_end)});
   }
+
   /*! \brief Compute the posterior mean of a leaf node, given the other model parameters and the samples that reach that node */
   inline double LeafPosteriorMean(XBARTGaussianRegressionSuffStat& leaf_suff_stat) {
     return leaf_suff_stat.outcome_sum_ / sigma_sq_ / ((1./tau_) + (leaf_suff_stat.sample_size_/sigma_sq_));
   }
+
   /*! \brief Compute the posterior standard deviation of a leaf node, given the other model parameters and the samples that reach that node */
   inline double LeafPosteriorStddev(XBARTGaussianRegressionSuffStat& leaf_suff_stat) {
     return std::sqrt(1. / ((1./tau_) + (leaf_suff_stat.sample_size_/sigma_sq_)));
   }
+
   /*! \brief Compute the posterior shape parameter for tau, the variance terms in the prior on leaf node parameters */
   inline double TauPosteriorShape(TreeEnsemble* tree_ensemble) {
     int num_leaves = 0;
@@ -160,6 +164,7 @@ class XBARTGaussianRegressionModel : public Model {
     }
     return (a_tau_ + num_leaves)/2.;
   }
+
   /*! \brief Compute the posterior scale parameter for tau, the variance terms in the prior on leaf node parameters */
   inline double TauPosteriorScale(TreeEnsemble* tree_ensemble) {
     double sum_sq_leaf_vals = 0;
@@ -171,11 +176,13 @@ class XBARTGaussianRegressionModel : public Model {
     }
     return (b_tau_ + sum_sq_leaf_vals)/2.;
   }
+
   /*! \brief Compute the posterior shape parameter for sigma^2, the global residual error variance */
   inline double SigmaPosteriorShape(Dataset* dataset) {
     data_size_t n = dataset->NumObservations();
     return (a_sigma_ + n)/2.;
   }
+
   /*! \brief Compute the posterior scale parameter for sigma^2, the global residual error variance */
   inline double SigmaPosteriorScale(Dataset* dataset) {
     data_size_t n = dataset->NumObservations();
@@ -186,6 +193,7 @@ class XBARTGaussianRegressionModel : public Model {
     }
     return (b_sigma_ + sum_sq_resid)/2.;
   }
+
   inline double GetGlobalParameter(std::string param_name) {
     if (param_name == "tau") {
       return tau_;
@@ -197,6 +205,7 @@ class XBARTGaussianRegressionModel : public Model {
       return sd_scale_;
     }
   }
+
   inline void SetGlobalParameter(std::string param_name, double param_value) {
     if (param_name == "tau") {
       tau_ = param_value;
@@ -208,6 +217,7 @@ class XBARTGaussianRegressionModel : public Model {
       sd_scale_ = param_value;
     }
   }
+
   inline void NodeIndexMapReset(data_size_t n) {
     node_index_map_.clear();
     AddNode(0, 0, n);
@@ -374,16 +384,19 @@ class BARTGaussianRegressionModel : public Model {
     double data_contrib = ((n_leaf*mu_sigma_)/(sigma_sq_ + n_leaf*mu_sigma_))*y_bar;
     return prior_contrib + data_contrib;
   }
+
   /*! \brief Compute the posterior standard deviation of a leaf node, given the other model parameters and the samples that reach that node */
   inline double LeafPosteriorStddev(BARTGaussianRegressionSuffStat& leaf_suff_stat) {
     data_size_t n_leaf = leaf_suff_stat.sample_size_;
     return ((sigma_sq_*mu_sigma_)/(sigma_sq_ + n_leaf*mu_sigma_));
   }
+
   /*! \brief Compute the posterior shape parameter for sigma^2, the global residual error variance */
   inline double SigmaPosteriorShape(Dataset* dataset) {
     data_size_t n = dataset->NumObservations();
     return (nu_/2.0) + n;
   }
+  
   /*! \brief Compute the posterior scale parameter for sigma^2, the global residual error variance */
   inline double SigmaPosteriorScale(Dataset* dataset) {
     data_size_t n = dataset->NumObservations();
@@ -394,6 +407,7 @@ class BARTGaussianRegressionModel : public Model {
     }
     return (nu_lambda_/2.0) + sum_sq_resid;
   }
+
   inline double GetGlobalParameter(std::string param_name) {
     if (param_name == "sigma_sq") {
       return sigma_sq_;
@@ -403,6 +417,7 @@ class BARTGaussianRegressionModel : public Model {
       return sd_scale_;
     }
   }
+
   inline void SetGlobalParameter(std::string param_name, double param_value) {
     if (param_name == "sigma_sq") {
       sigma_sq_ = param_value;

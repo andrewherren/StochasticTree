@@ -29,6 +29,9 @@ set(StochTree_HEADER_DIR ${MAIN_PROJECT_DIR}/include)
 # boost.math header file directory
 set(BOOSTMATH_HEADER_DIR ${MAIN_PROJECT_DIR}/dependencies/boost_math/include)
 
+# Eigen header file directory
+set(EIGEN_HEADER_DIR ${MAIN_PROJECT_DIR}/dependencies/eigen)
+
 # Aggregate the source files underpinning the implementation in the C++ library
 file(
   GLOB 
@@ -39,7 +42,8 @@ file(
   ${MAIN_PROJECT_DIR}/src/interface.cpp
   ${MAIN_PROJECT_DIR}/src/io.cpp
   ${MAIN_PROJECT_DIR}/src/json11.cpp
-  ${MAIN_PROJECT_DIR}/src/model.cpp
+  ${MAIN_PROJECT_DIR}/src/model/univariate_xbart.cpp
+  ${MAIN_PROJECT_DIR}/src/model/univariate_bart.cpp
   ${MAIN_PROJECT_DIR}/src/model_draw.cpp
   ${MAIN_PROJECT_DIR}/src/optimization.cpp
   ${MAIN_PROJECT_DIR}/src/partition_tracker.cpp
@@ -50,7 +54,7 @@ file(
 add_library(stochtree_objs OBJECT ${SOURCES})
 
 # Include the headers in the source library
-target_include_directories(stochtree_objs PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR})
+target_include_directories(stochtree_objs PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR})
 
 if(APPLE)
   set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
@@ -61,7 +65,7 @@ add_subdirectory(pybind11)
 pybind11_add_module(stochtree_cpp src/stochtree.cpp)
 
 # Link to C++ source and headers
-target_include_directories(stochtree_cpp PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR})
+target_include_directories(stochtree_cpp PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR})
 target_link_libraries(stochtree_cpp PRIVATE stochtree_objs)
 
 # EXAMPLE_VERSION_INFO is defined by setup.py and passed into the C++ code as a

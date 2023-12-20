@@ -10,3 +10,6 @@
 [submodule "python-package/pybind11"]
 	path = python-package/pybind11
 	url = https://github.com/pybind/pybind11
+[submodule "dependencies/eigen"]
+	path = dependencies/eigen
+	url = https://gitlab.com/libeigen/eigen

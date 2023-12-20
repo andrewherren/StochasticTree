@@ -136,6 +136,7 @@ class Tree {
    */
   void CollapseToLeaf(std::int32_t nid, std::vector<double> value_vector) {
     CHECK_GT(output_dimension_, 1);
+    CHECK_EQ(output_dimension_, value_vector.size());
     if (this->IsLeaf(nid)) return;
     if (!this->IsLeaf(this->LeftChild(nid))) {
       CollapseToLeaf(this->LeftChild(nid), value_vector);

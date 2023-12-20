@@ -13,14 +13,14 @@ set.seed(random_seed)
 
 # Generate simulated data and split into training and prediction sets
 n <- 500
-p <- 3
+p <- 10
 num_samples <- 50
 num_burnin <- 100
 num_trees <- 100
 train_inds <- sample(1:n, round(n*0.8), replace = F)
 test_inds <- (1:n)[!((1:n) %in% train_inds)]
 X <- matrix(runif(n*p), ncol=p)
-y <- X[,1] * 5 + X[,2] * 1000 + rnorm(n, 0, 1)
+y <- X[,1] * 5 + X[,2] * 100 + rnorm(n, 0, 1)
 Xtrain <- X[train_inds,]
 Xtest <- X[test_inds,]
 ytrain <- y[train_inds]

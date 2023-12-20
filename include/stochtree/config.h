@@ -290,6 +290,10 @@ struct Config {
   // desc = used to specify indices of features that are (ordered) categorical, in the format "0,2,3"
   std::string ordered_categoricals = "";
 
+  // type = comma-separated ints
+  // desc = used to specify indices of basis vectors, in the format "0,2,3"
+  std::string basis_columns = "";
+
   // type = int
   // check = >10
   // desc = Number of cutpoints to consider for numeric features with many observations

@@ -10,9 +10,9 @@ library(stoch.tree)
 # Generate simulated data and split into training and prediction sets
 n <- 500
 p <- 10
-num_samples <- 10
+num_samples <- 50
 num_burnin <- 10
-num_trees <- 20
+num_trees <- 100
 train_inds <- sample(1:n, round(n*0.8), replace = F)
 test_inds <- (1:n)[!((1:n) %in% train_inds)]
 X <- matrix(runif(n*(p-2)), ncol=(p-2))

@@ -356,6 +356,7 @@ std::string Config::SaveMembersToString() const {
   str_buf << "[header: " << header << "]\n";
   str_buf << "[unordered_categoricals: " << unordered_categoricals << "]\n";
   str_buf << "[ordered_categoricals: " << ordered_categoricals << "]\n";
+  str_buf << "[basis_columns: " << basis_columns << "]\n";
   str_buf << "[cutpoint_grid_size: " << cutpoint_grid_size << "]\n";
   str_buf << "[outcome_columns: " << outcome_columns << "]\n";
   str_buf << "[treatment_columns: " << treatment_columns << "]\n";
@@ -389,7 +390,7 @@ const std::unordered_set<std::string>& Config::parameter_set() {
     "mu", "kappa", "a_sigma", "b_sigma", "a_tau", "b_tau", "alpha", "beta", 
     "nu", "lambda", "mu_mean", "mu_sigma", "cutpoint_grid_size", "data_driven_prior", 
     "min_ssr_reduction", "header", "unordered_categoricals", "ordered_categoricals", 
-    "outcome_columns", "treatment_columns", 
+    "basis_columns", "outcome_columns", "treatment_columns", 
     "label_column", "treatment_column", "save_model_draws", "precise_float_parser",
   });
   return params;
@@ -468,6 +469,8 @@ void Config::GetMembersFromString(const std::unordered_map<std::string, std::str
 
   GetString(params, "ordered_categoricals", &ordered_categoricals);
 
+  GetString(params, "basis_columns", &basis_columns);
+
   GetString(params, "outcome_columns", &outcome_columns);
 
   GetString(params, "treatment_columns", &treatment_columns);
@@ -515,6 +518,7 @@ const std::unordered_map<std::string, std::vector<std::string>>& Config::paramet
     {"header", {}},
     {"unordered_categoricals", {}},
     {"ordered_categoricals", {}},
+    {"basis_columns", {}},
     {"outcome_columns", {}},
     {"treatment_columns", {}},
     {"label_column", {}},
@@ -558,6 +562,7 @@ const std::unordered_map<std::string, std::string>& Config::ParameterTypes() {
     {"header", "bool"},
     {"unordered_categoricals", "string"},
     {"ordered_categoricals", "string"},
+    {"basis_columns", "string"},
     {"outcome_columns", "string"},
     {"treatment_columns", "string"},
     {"label_column", "string"},

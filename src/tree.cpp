@@ -248,6 +248,8 @@ void Tree::ExpandNode(std::int32_t nid, int split_index, std::vector<std::uint32
 
 void Tree::ExpandNode(std::int32_t nid, int split_index, double split_value, bool default_left, std::vector<double> left_value_vector, std::vector<double> right_value_vector) {
   CHECK_GT(output_dimension_, 1);
+  CHECK_EQ(output_dimension_, left_value_vector.size());
+  CHECK_EQ(output_dimension_, right_value_vector.size());
   int pleft = this->AllocNode();
   int pright = this->AllocNode();
   this->SetChildren(nid, pleft, pright);
@@ -274,6 +276,8 @@ void Tree::ExpandNode(std::int32_t nid, int split_index, double split_value, boo
 
 void Tree::ExpandNode(std::int32_t nid, int split_index, std::vector<std::uint32_t> const& categorical_indices, bool default_left, std::vector<double> left_value_vector, std::vector<double> right_value_vector) {
   CHECK_GT(output_dimension_, 1);
+  CHECK_EQ(output_dimension_, left_value_vector.size());
+  CHECK_EQ(output_dimension_, right_value_vector.size());
   int pleft = this->AllocNode();
   int pright = this->AllocNode();
   this->SetChildren(nid, pleft, pright);
@@ -407,6 +411,7 @@ void Tree::SetLeaf(std::int32_t nid, double value) {
 
 void Tree::SetLeafVector(std::int32_t nid, std::vector<double> const& node_leaf_vector) {
   CHECK_GT(output_dimension_, 1);
+  CHECK_EQ(output_dimension_, node_leaf_vector.size());
   if (HasLeafVector(nid)) {
     if (node_leaf_vector.size() != output_dimension_) {
       Log::Fatal("node_leaf_vector must be same size as the vector output dimension");
