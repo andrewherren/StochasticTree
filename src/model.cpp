@@ -802,6 +802,10 @@ void BARTGaussianRegressionModel::GrowMCMC(Dataset* dataset, Tree* tree, Unsorte
     std::log(p_leaf_parent) - std::log(prob_grow_old) - std::log(p_leaf) + std::log(split_likelihood) - std::log(no_split_likelihood)
   );
   // Threshold at 0
+  // [Giacomo] Shouldn't there be 0 = log(1) here instead of 1? Actually, it
+  // makes no difference because the check is log U(0, 1) <= log_mh_ratio, so
+  // the case with the log ratio above 0 is handled implicitly, since the l.h.s.
+  // is always <= 0.
   if (log_mh_ratio > 1) {
     log_mh_ratio = 1;
   }
@@ -884,6 +888,7 @@ void BARTGaussianRegressionModel::PruneMCMC(Dataset* dataset, Tree* tree, Unsort
     std::log(p_leaf) - std::log(prob_grow_new) - std::log(p_leaf_parent) + std::log(no_split_likelihood) - std::log(split_likelihood)
   );
   // Threshold at 0
+  // [Giacomo] redundant
   if (log_mh_ratio > 0) {
     log_mh_ratio = 0;
   }
@@ -912,6 +917,7 @@ BARTGaussianRegressionSuffStat BARTGaussianRegressionModel::ComputeNodeSufficien
     node_suff_stat.sample_size_++;
     node_suff_stat.outcome_sum_ += outcome_value;
     node_suff_stat.outcome_sum_sq_ += std::pow(outcome_value, 2.0);
+      // [Giacomo] use multiplication instead of std::pow
   }
   return node_suff_stat;
 }
