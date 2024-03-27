@@ -55,6 +55,9 @@ set(BOOSTMATH_HEADER_DIR ${PROJECT_SOURCE_DIR}/dependencies/boost_math/include)
 # Eigen header file directory
 set(EIGEN_HEADER_DIR ${PROJECT_SOURCE_DIR}/dependencies/eigen)
 
+# simdjson header file directory
+set(SIMDJSON_HEADER_DIR ${PROJECT_SOURCE_DIR}/dependencies/simdjson_singleheader)
+
 # Library directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build)
 
@@ -73,11 +76,17 @@ file(
   src/tree.cpp
 )
 
+# Define the simdjson source as a compilation target
+add_library(simdjson_objs OBJECT ${SIMDJSON_HEADER_DIR}/simdjson.cpp)
+
+# Include the headers in the source library
+target_include_directories(simdjson_objs PRIVATE ${SIMDJSON_HEADER_DIR})
+
 # Define the C++ source code as a target
 add_library(stochtree_objs OBJECT ${SOURCES})
 
 # Include the headers in the source library
-target_include_directories(stochtree_objs PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR})
+target_include_directories(stochtree_objs PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR} ${SIMDJSON_HEADER_DIR})
 
 if(APPLE)
   set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
@@ -101,16 +110,16 @@ if(BUILD_TEST)
   file(GLOB CPP_TEST_SOURCES test/cpp/*.cpp)
   add_executable(teststochtree ${CPP_TEST_SOURCES})
   set(STOCHTREE_TEST_HEADER_DIR ${PROJECT_SOURCE_DIR}/test/cpp)
-  target_include_directories(teststochtree PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR} ${STOCHTREE_TEST_HEADER_DIR})
-  target_link_libraries(teststochtree PRIVATE stochtree_objs GTest::gtest_main)
+  target_include_directories(teststochtree PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR} ${SIMDJSON_HEADER_DIR} ${STOCHTREE_TEST_HEADER_DIR})
+  target_link_libraries(teststochtree PRIVATE stochtree_objs simdjson_objs GTest::gtest_main)
   gtest_discover_tests(teststochtree)
 endif()
 
 if(BUILD_DEBUG_TARGETS)
-  # Build test suite
+  # Debug executable
   add_executable(debugstochtree debug/cpp/api_debug.cpp)
   set(StochTree_DEBUG_HEADER_DIR ${PROJECT_SOURCE_DIR}/debug/cpp)
-  target_include_directories(debugstochtree PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR} ${StochTree_DEBUG_HEADER_DIR})
-  target_link_libraries(debugstochtree PRIVATE stochtree_objs)
+  target_include_directories(debugstochtree PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR} ${SIMDJSON_HEADER_DIR} ${StochTree_DEBUG_HEADER_DIR})
+  target_link_libraries(debugstochtree PRIVATE stochtree_objs simdjson_objs)
 endif()
 

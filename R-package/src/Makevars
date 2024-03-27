@@ -1,19 +1,19 @@
 # package root
 PKGROOT=../..
 
-PKG_CPPFLAGS= -I$(PKGROOT)/include -I$(PKGROOT)/dependencies/boost_math/include -I$(PKGROOT)/dependencies/eigen
+PKG_CPPFLAGS= -I$(PKGROOT)/include -I$(PKGROOT)/dependencies/boost_math/include -I$(PKGROOT)/dependencies/eigen -I$(PKGROOT)/dependencies/simdjson_singleheader
 
 OBJECTS = \
-    data.o \
-    predictor.o \
-    sampler.o \
-    cpp11.o \
-	$(PKGROOT)/src/container.o \
-    $(PKGROOT)/src/cutpoint_candidates.o \
-	$(PKGROOT)/src/data.o \
-	$(PKGROOT)/src/io.o \
-	$(PKGROOT)/src/json11.o \
-	$(PKGROOT)/src/leaf_model.o \
-	$(PKGROOT)/src/partition_tracker.o \
-	$(PKGROOT)/src/random_effects.o \
-	$(PKGROOT)/src/tree.o
+  	data.o \
+	  predictor.o \
+	  sampler.o \
+	  cpp11.o \
+		$(PKGROOT)/src/container.o \
+  	$(PKGROOT)/src/cutpoint_candidates.o \
+		$(PKGROOT)/src/data.o \
+		$(PKGROOT)/src/io.o \
+		$(PKGROOT)/src/json11.o \
+		$(PKGROOT)/src/leaf_model.o \
+		$(PKGROOT)/src/partition_tracker.o \
+		$(PKGROOT)/src/random_effects.o \
+		$(PKGROOT)/src/tree.o

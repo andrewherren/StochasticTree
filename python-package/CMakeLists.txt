@@ -41,6 +41,9 @@ set(BOOSTMATH_HEADER_DIR ${MAIN_PROJECT_DIR}/dependencies/boost_math/include)
 # Eigen header file directory
 set(EIGEN_HEADER_DIR ${MAIN_PROJECT_DIR}/dependencies/eigen)
 
+# simdjson header file directory
+set(SIMDJSON_HEADER_DIR ${PROJECT_SOURCE_DIR}/dependencies/simdjson_singleheader)
+
 # Aggregate the source files underpinning the implementation in the C++ library
 file(
   GLOB 
@@ -56,11 +59,17 @@ file(
   ${MAIN_PROJECT_DIR}/src/tree.cpp
 )
 
+# Define the simdjson source as a compilation target
+add_library(simdjson_objs OBJECT ${SIMDJSON_HEADER_DIR}/simdjson.cpp)
+
+# Include the headers in the source library
+target_include_directories(simdjson_objs PRIVATE ${SIMDJSON_HEADER_DIR})
+
 # Define the C++ source code as a target
 add_library(stochtree_objs OBJECT ${SOURCES})
 
 # Include the headers in the source library
-target_include_directories(stochtree_objs PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR})
+target_include_directories(stochtree_objs PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR} ${SIMDJSON_HEADER_DIR})
 
 if(APPLE)
   set(CMAKE_SHARED_LIBRARY_SUFFIX ".so")
@@ -71,8 +80,8 @@ add_subdirectory(pybind11)
 pybind11_add_module(stochtree_cpp src/stochtree.cpp)
 
 # Link to C++ source and headers
-target_include_directories(stochtree_cpp PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR})
-target_link_libraries(stochtree_cpp PRIVATE stochtree_objs)
+target_include_directories(stochtree_cpp PRIVATE ${StochTree_HEADER_DIR} ${BOOSTMATH_HEADER_DIR} ${EIGEN_HEADER_DIR} ${SIMDJSON_HEADER_DIR})
+target_link_libraries(stochtree_cpp PRIVATE stochtree_objs simdjson_objs)
 
 # EXAMPLE_VERSION_INFO is defined by setup.py and passed into the C++ code as a
 # define (VERSION_INFO) here.
