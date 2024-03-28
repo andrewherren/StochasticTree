@@ -75,4 +75,41 @@ std::vector<double> ForestContainer::PredictRaw(ForestDataset& dataset, int fore
   return output;
 }
 
+/*! \brief Save to JSON */
+json11::Json ForestContainer::to_json() {
+  json11::Json::object result_obj;
+  result_obj.emplace(std::make_pair("num_samples", this->num_samples_));
+  result_obj.emplace(std::make_pair("num_trees", this->num_trees_));
+  result_obj.emplace(std::make_pair("output_dimension", this->output_dimension_));
+  result_obj.emplace(std::make_pair("is_leaf_constant", this->is_leaf_constant_));
+  result_obj.emplace(std::make_pair("initialized", this->initialized_));
+
+  std::string forest_label;
+  for (int i = 0; i < forests_.size(); i++) {
+    forest_label = "forest_" + std::to_string(i);
+    result_obj.emplace(std::make_pair(forest_label, forests_[i]->to_json()));
+  }
+  
+  json11::Json result(result_obj);
+  return result;
+}
+
+/*! \brief Load from JSON */
+void ForestContainer::from_json(const json11::Json& json_forest_container) {
+  this->num_samples_ = json_forest_container["num_samples"].int_value();
+  this->num_trees_ = json_forest_container["num_trees"].int_value();
+  this->output_dimension_ = json_forest_container["output_dimension"].int_value();
+  this->is_leaf_constant_ = json_forest_container["is_leaf_constant"].bool_value();
+  this->initialized_ = json_forest_container["initialized"].bool_value();
+
+  std::string forest_label;
+  forests_.clear();
+  forests_.resize(this->num_samples_);
+  for (int i = 0; i < this->num_samples_; i++) {
+    forest_label = "forest_" + std::to_string(i);
+    forests_[i] = std::make_unique<TreeEnsemble>();
+    forests_[i]->from_json(json_forest_container[forest_label]);
+  }
+}
+
 } // namespace StochTree

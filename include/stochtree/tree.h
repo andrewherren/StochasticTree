@@ -6,6 +6,7 @@
 #ifndef STOCHTREE_TREE_H_
 #define STOCHTREE_TREE_H_
 
+#include <stochtree/json11.h>
 #include <stochtree/log.h>
 #include <stochtree/meta.h>
 #include <Eigen/Dense>
@@ -82,6 +83,11 @@ class Tree {
   void ExpandNode(std::int32_t nid, int split_index, TreeSplit& split, bool default_left, double left_value, double right_value);
   /*! \brief Expand a node based on a generic split rule */
   void ExpandNode(std::int32_t nid, int split_index, TreeSplit& split, bool default_left, std::vector<double> left_value_vector, std::vector<double> right_value_vector);
+  
+  /*! \brief Save to JSON */
+  json11::Json to_json();
+  /*! \brief Load from JSON */
+  void from_json(const json11::Json& tree_json);
 
   /*!
    * \brief change a non leaf node to a leaf node, delete its children

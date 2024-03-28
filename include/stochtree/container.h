@@ -38,6 +38,11 @@ class ForestContainer {
   inline int32_t OutputDimension(int ensemble_num) {return forests_[ensemble_num]->OutputDimension();}
   inline bool IsLeafConstant(int ensemble_num) {return forests_[ensemble_num]->IsLeafConstant();}
 
+  /*! \brief Save to JSON */
+  json11::Json to_json();
+  /*! \brief Load from JSON */
+  void from_json(const json11::Json& json_forest_container);
+
  private:
   std::vector<std::unique_ptr<TreeEnsemble>> forests_;
   int num_samples_;

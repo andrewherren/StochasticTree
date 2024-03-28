@@ -195,6 +195,39 @@ class TreeEnsemble {
     return is_leaf_constant_;
   }
 
+  /*! \brief Save to JSON */
+  json11::Json to_json() {
+    json11::Json::object result_obj;
+    result_obj.emplace(std::make_pair("num_trees", this->num_trees_));
+    result_obj.emplace(std::make_pair("output_dimension", this->output_dimension_));
+    result_obj.emplace(std::make_pair("is_leaf_constant", this->is_leaf_constant_));
+
+    std::string tree_label;
+    for (int i = 0; i < trees_.size(); i++) {
+      tree_label = "tree_" + std::to_string(i);
+      result_obj.emplace(std::make_pair(tree_label, trees_[i]->to_json()));
+    }
+    
+    json11::Json result(result_obj);
+    return result;
+  }
+  
+  /*! \brief Load from JSON */
+  void from_json(const json11::Json& json_ensemble) {
+    this->num_trees_ = json_ensemble["num_trees"].int_value();
+    this->output_dimension_ = json_ensemble["output_dimension"].int_value();
+    this->is_leaf_constant_ = json_ensemble["is_leaf_constant"].bool_value();
+
+    std::string tree_label;
+    trees_.clear();
+    trees_.resize(this->num_trees_);
+    for (int i = 0; i < this->num_trees_; i++) {
+      tree_label = "tree_" + std::to_string(i);
+      trees_[i] = std::make_unique<Tree>();
+      trees_[i]->from_json(json_ensemble[tree_label]);
+    }
+  }
+
  private:
   std::vector<std::unique_ptr<Tree>> trees_;
   int num_trees_;
